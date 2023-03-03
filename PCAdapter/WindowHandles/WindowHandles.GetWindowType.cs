@@ -1,4 +1,4 @@
-﻿namespace SampleAdapter.PC
+﻿namespace Mtconnect.PCAdapter
 {
     public static partial class WindowHandles
     {

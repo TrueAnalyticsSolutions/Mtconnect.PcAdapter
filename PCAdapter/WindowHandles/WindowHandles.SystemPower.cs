@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace SampleAdapter.PC
+namespace Mtconnect.PCAdapter
 {
     public static partial class WindowHandles
     {

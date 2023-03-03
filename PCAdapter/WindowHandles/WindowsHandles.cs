@@ -3,7 +3,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace SampleAdapter.PC
+namespace Mtconnect.PCAdapter
 {
     public static partial class WindowHandles
     {
