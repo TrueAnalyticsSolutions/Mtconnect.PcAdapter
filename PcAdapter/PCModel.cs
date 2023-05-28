@@ -1,5 +1,6 @@
-﻿using Mtconnect.AdapterInterface.Contracts.Attributes;
-using Mtconnect.AdapterInterface.DataItems;
+﻿using Mtconnect.AdapterSdk.Contracts.Attributes;
+using Mtconnect.AdapterSdk.DataItems;
+using Mtconnect.AdapterSdk.DataItemValues;
 using System;
 
 namespace Mtconnect.PCAdapter
@@ -7,29 +8,26 @@ namespace Mtconnect.PCAdapter
     public class PCModel : IAdapterDataModel
     {
         [Event("avail")]
-        public string Availability { get; set; }
+        public Availability Availability { get; set; }
 
         [Sample("xPos", "user32.dll#GetCursorPos().X")]
-        public int? XPosition { get; set; }
+        public Position.ACTUAL XPosition { get; set; }
         [Timestamp("xPos")]
         public DateTime? XPosition_Time { get; set; }
 
         [Sample("yPos", "user32.dll#GetCursorPos().Y")]
-        public int? YPosition { get; set; }
+        public Position.ACTUAL YPosition { get; set; }
 
         [Event("prog", "user32.dll#GetWindowText(user32.dll#GetForegroundWindow(), StringBuilder(256), 256)")]
-        public string WindowTitle { get; set; }
-
-        [Event("foobar")]
-        public string FooBar { get; set; } = null;
+        public Program WindowTitle { get; set; }
 
         [Event("ac")]
         public bool? ACConnected { get; set; } = null;
         [Condition("acState")]
         public Condition ACCondition { get; set; } = new Condition("acState");
 
-        [Sample("battery")]
-        public int? BatteryRemaining { get; set; } = null;
+        [Sample("battery", "Percentage of battery remaining")]
+        public BatteryCharge BatteryRemaining { get; set; } = null;
         [Condition("batteryState")]
         public Condition BatteryCondition { get; set; } = new Condition("batteryState");
 

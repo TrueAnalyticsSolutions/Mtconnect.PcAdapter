@@ -1,6 +1,9 @@
-﻿using Mtconnect.AdapterInterface.DataItems;
+﻿using Mtconnect.AdapterSdk.DataItems;
+using Mtconnect.AdapterSdk.DataItemValues;
 using System;
 using System.Drawing;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading;
 
 namespace Mtconnect.PCAdapter
@@ -10,6 +13,17 @@ namespace Mtconnect.PCAdapter
     /// </summary>
     public class PCAdapterSource : IAdapterSource, IDisposable
     {
+        private string _deviceUuid;
+        public string DeviceUuid => _deviceUuid ?? (_deviceUuid = GenerateUUID(DeviceName));
+
+        public string DeviceName => Environment.MachineName;
+
+        public string StationId => Environment.MachineName;
+
+        public string SerialNumber => throw new NotImplementedException();
+
+        public string Manufacturer => throw new NotImplementedException();
+
         /// <inheritdoc />
         public event DataReceivedHandler OnDataReceived;
         /// <inheritdoc />
@@ -19,6 +33,7 @@ namespace Mtconnect.PCAdapter
 
         /// TODO: Change the type to your data model or implement some other form of managing a IAdapterDataModel
         public PCModel Model { get; private set; } = new PCModel();
+
         private int _loopCount = 0;
         private System.Timers.Timer Timer = new System.Timers.Timer();
 
@@ -37,7 +52,7 @@ namespace Mtconnect.PCAdapter
         // NOTE: This could be tied to a custom egress event, an asynchronous loop, or a timer.
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
-            Model.Availability = "AVAILABLE";
+            Model.Availability = Availability.AVAILABLE;
 
 
             try
@@ -51,9 +66,9 @@ namespace Mtconnect.PCAdapter
                 }
                 else
                 {
-                    Model.XPosition = null;
+                    Model.XPosition?.Unavailable();
                     Model.XPosition_Time = null;
-                    Model.YPosition = null;
+                    Model.YPosition?.Unavailable();
                 }
 
                 try
@@ -65,12 +80,12 @@ namespace Mtconnect.PCAdapter
                     }
                     else
                     {
-                        Model.WindowTitle = null;
+                        Model.WindowTitle?.Unavailable();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Model.WindowTitle = null;
+                    Model.WindowTitle?.Unavailable();
                 }
 
                 try
@@ -80,7 +95,7 @@ namespace Mtconnect.PCAdapter
                     if (sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.Unknown || sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.NoSystemBattery)
                     {
                         Model.BatteryCondition.Add(Condition.Level.WARNING, sps.flgBattery.ToString(), ((int)sps.flgBattery).ToString(), string.Empty, string.Empty);
-                        Model.BatteryRemaining = null;
+                        Model.BatteryRemaining?.Unavailable();
                     }
                     else
                     {
@@ -106,12 +121,6 @@ namespace Mtconnect.PCAdapter
                     Model.ACCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
                 }
 
-                // Comment out for testing * DATAITEM_VALUE foobar
-                if (_loopCount > 5000 / Timer.Interval)
-                {
-                    Model.FooBar = "foobar";
-                }
-
                 Model.SystemAccess.Normal();
             }
             catch (Exception ex)
@@ -119,7 +128,7 @@ namespace Mtconnect.PCAdapter
                 Model.SystemAccess.Add(Condition.Level.FAULT, ex.Message, "access");
             }
 
-            OnDataReceived?.Invoke(Model, new DataReceivedEventArgs());
+            OnDataReceived?.Invoke(this, new DataReceivedEventArgs(Model));
         }
 
         /// <inheritdoc />
@@ -138,6 +147,22 @@ namespace Mtconnect.PCAdapter
             Timer.Stop();
 
             OnAdapterSourceStopped?.Invoke(this, new AdapterSourceStoppedEventArgs(ex));
+        }
+
+        private string GenerateUUID(string input)
+        {
+            using (MD5 md5 = MD5.Create())
+            {
+                byte[] inputBytes = Encoding.UTF8.GetBytes(input);
+                byte[] hashBytes = md5.ComputeHash(inputBytes);
+
+                // Set the version (4 bits) and variant (2 bits) according to the UUID specification
+                hashBytes[7] = (byte)((hashBytes[7] & 0x0F) | 0x30); // version 3 (MD5)
+                hashBytes[8] = (byte)((hashBytes[8] & 0x3F) | 0x80); // variant 1
+
+                // Convert the hash bytes to a Guid
+                return new Guid(hashBytes).ToString();
+            }
         }
 
         public void Dispose()
