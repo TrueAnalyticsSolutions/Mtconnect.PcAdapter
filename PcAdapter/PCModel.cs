@@ -1,5 +1,6 @@
 ﻿using Mtconnect.AdapterSdk.Contracts.Attributes;
 using Mtconnect.AdapterSdk.DataItems;
+using Mtconnect.AdapterSdk.DataItemTypes;
 using Mtconnect.AdapterSdk.DataItemValues;
 using System;
 
@@ -10,28 +11,51 @@ namespace Mtconnect.PCAdapter
         [Event("avail")]
         public Availability Availability { get; set; }
 
-        [Sample("xPos", "user32.dll#GetCursorPos().X")]
-        public Position.ACTUAL XPosition { get; set; }
-        [Timestamp("xPos")]
-        public DateTime? XPosition_Time { get; set; }
+        private Mouse _mouse;
+        [DataItemPartial("mouse_")]
+        public Mouse Mouse => _mouse ?? (_mouse = new Mouse());
 
-        [Sample("yPos", "user32.dll#GetCursorPos().Y")]
-        public Position.ACTUAL YPosition { get; set; }
+        private PCController _ctrlr;
+        [DataItemPartial("ctrlr_")]
+        public PCController Controller => _ctrlr ?? (_ctrlr = new PCController());
+    }
+    public class MouseAxis : Axis
+    {
+        [Sample("pos", "user32.dll#GetCursorPos()", Units = "PIXEL")]
+        public Position.ACTUAL ActualPosition { get; set; }
 
+        //[Timestamp("pos")]
+        //public DateTime? ActualPosition_Time { get; set;}
+    }
+    public class Mouse : Axes
+    {
+        [DataItemPartial("x_")]
+        public MouseAxis X => GetOrAddAxis<MouseAxis>(nameof(X));
+
+        [DataItemPartial("y_")]
+        public MouseAxis Y => GetOrAddAxis<MouseAxis>(nameof(Y));
+    }
+    public class PCController : Controller
+    {
+        [DataItemPartial("p_")]
+        public PCPath Path => GetOrAddPath<PCPath>(nameof(Path));
+    }
+    public class PCPath : Path {
         [Event("prog", "user32.dll#GetWindowText(user32.dll#GetForegroundWindow(), StringBuilder(256), 256)")]
         public Program WindowTitle { get; set; }
 
-        [Event("ac")]
+        [Event("ac", "Indicates whether the AC charger is currently connected")]
         public bool? ACConnected { get; set; } = null;
         [Condition("acState")]
         public Condition ACCondition { get; set; } = new Condition("acState");
 
-        [Sample("battery", "Percentage of battery remaining")]
+        [Sample("battery", "Percentage of battery remaining", Units = "PERCENT")]
         public BatteryCharge BatteryRemaining { get; set; } = null;
+
         [Condition("batteryState")]
         public Condition BatteryCondition { get; set; } = new Condition("batteryState");
 
-        [Condition("access")]
+        [Condition("access", "State of the adapter's access to system information.")]
         public Condition SystemAccess { get; set; } = new Condition("access");
     }
 }

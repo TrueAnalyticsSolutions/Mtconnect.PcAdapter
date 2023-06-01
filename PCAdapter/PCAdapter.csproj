@@ -19,8 +19,8 @@
   <ItemGroup>
     <PackageReference Include="Consoul" Version="1.6.3" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
-    <PackageReference Include="Mtconnect.AdapterSdk" Version="2.0.0-beta.63" />
-    <PackageReference Include="Mtconnect.TcpAdapter" Version="2.0.0-beta.49" />
+    <PackageReference Include="Mtconnect.AdapterSdk" Version="2.0.0" />
+    <PackageReference Include="Mtconnect.TcpAdapter" Version="2.0.0" />
   </ItemGroup>
 
 </Project>

@@ -60,15 +60,14 @@ namespace Mtconnect.PCAdapter
                 Point lpPoint;
                 if (WindowHandles.GetCursorPos(out lpPoint))
                 {
-                    Model.XPosition = lpPoint.X;
-                    Model.XPosition_Time = new DateTime(2002, 01, 01); // Birthdate of C#
-                    Model.YPosition = lpPoint.Y;
+                    Model.Mouse.X.ActualPosition = lpPoint.X;
+                    //Model.Mouse.X.ActualPosition_Time = new DateTime(2002, 01, 01); // Birthdate of C#
+                    Model.Mouse.Y.ActualPosition = lpPoint.Y;
                 }
                 else
                 {
-                    Model.XPosition?.Unavailable();
-                    Model.XPosition_Time = null;
-                    Model.YPosition?.Unavailable();
+                    Model.Mouse?.X?.ActualPosition?.Unavailable();
+                    Model.Mouse?.Y?.ActualPosition?.Unavailable();
                 }
 
                 try
@@ -76,16 +75,16 @@ namespace Mtconnect.PCAdapter
                     string activeWindowTitle = WindowHandles.GetActiveWindowTitle();
                     if (!string.IsNullOrEmpty(activeWindowTitle))
                     {
-                        Model.WindowTitle = activeWindowTitle;
+                        Model.Controller.Path.WindowTitle = activeWindowTitle;
                     }
                     else
                     {
-                        Model.WindowTitle?.Unavailable();
+                        Model.Controller.Path.WindowTitle?.Unavailable();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Model.WindowTitle?.Unavailable();
+                    Model.Controller.Path.WindowTitle?.Unavailable();
                 }
 
                 try
@@ -94,38 +93,38 @@ namespace Mtconnect.PCAdapter
                     WindowHandles.SystemPower.GetSystemPowerStatus(out sps);
                     if (sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.Unknown || sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.NoSystemBattery)
                     {
-                        Model.BatteryCondition.Add(Condition.Level.WARNING, sps.flgBattery.ToString(), ((int)sps.flgBattery).ToString(), string.Empty, string.Empty);
-                        Model.BatteryRemaining?.Unavailable();
+                        Model.Controller.Path.BatteryCondition.Add(Condition.Level.WARNING, sps.flgBattery.ToString(), ((int)sps.flgBattery).ToString(), string.Empty, string.Empty);
+                        Model.Controller.Path.BatteryRemaining?.Unavailable();
                     }
                     else
                     {
-                        Model.BatteryCondition.Normal();
-                        Model.BatteryRemaining = (int)sps.BatteryLifePercent;
+                        Model.Controller.Path.BatteryCondition.Normal();
+                        Model.Controller.Path.BatteryRemaining = (int)sps.BatteryLifePercent;
                     }
 
 
                     if (sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Unknown)
                     {
-                        Model.ACCondition.Add(Condition.Level.WARNING, sps.LineStatus.ToString(), ((int)sps.LineStatus).ToString(), string.Empty, string.Empty);
-                        Model.ACConnected = null;
+                        Model.Controller.Path.ACCondition.Add(Condition.Level.WARNING, sps.LineStatus.ToString(), ((int)sps.LineStatus).ToString(), string.Empty, string.Empty);
+                        Model.Controller.Path.ACConnected = null;
                     }
                     else
                     {
-                        Model.ACCondition.Normal();
-                        Model.ACConnected = sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Online;
+                        Model.Controller.Path.ACCondition.Normal();
+                        Model.Controller.Path.ACConnected = sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Online;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Model.BatteryCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
-                    Model.ACCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
+                    Model.Controller.Path.BatteryCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
+                    Model.Controller.Path.ACCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
                 }
 
-                Model.SystemAccess.Normal();
+                Model.Controller.Path.SystemAccess.Normal();
             }
             catch (Exception ex)
             {
-                Model.SystemAccess.Add(Condition.Level.FAULT, ex.Message, "access");
+                Model.Controller.Path.SystemAccess.Add(Condition.Level.FAULT, ex.Message, "access");
             }
 
             OnDataReceived?.Invoke(this, new DataReceivedEventArgs(Model));

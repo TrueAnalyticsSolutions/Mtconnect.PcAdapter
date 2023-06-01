@@ -7,6 +7,8 @@ namespace TcpTerminal
 {
     public static class Program
     {
+        public const int SAMPLE_RATE = 2_000;
+
         public static void Main(string[] args)
         {
             var loggerFactory = LoggerFactory.Create(o => { o.AddConsoulLogger(); o.SetMinimumLevel(LogLevel.Debug); });
@@ -16,7 +18,7 @@ namespace TcpTerminal
 
             using (var adapter = new TcpAdapter(options, loggerFactory))
             {
-                adapter.Start(new PCAdapterSource());
+                adapter.Start(new PCAdapterSource(SAMPLE_RATE));
 
                 Consoul.Write($"Adapter running @ http://*:{adapter.Port}");
 
