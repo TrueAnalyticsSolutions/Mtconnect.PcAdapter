@@ -24,6 +24,10 @@ namespace Mtconnect.PCAdapter
         [Sample("pos", "user32.dll#GetCursorPos()", Units = "PIXEL")]
         public Position.ACTUAL ActualPosition { get; set; }
 
+        /* NOTE: Here we are providing the opportunity to override the timestamp of the DataItem.
+         * This is a useful feature to provide more accurate timestamps for your data either by referencing a timestamp from the source
+         * or, by calculating the accurate timestamp based on conditions of timestamp drift.
+         * */
         //[Timestamp("pos")]
         //public DateTime? ActualPosition_Time { get; set;}
     }
