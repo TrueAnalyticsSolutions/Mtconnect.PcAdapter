@@ -38,28 +38,56 @@ namespace Mtconnect.PCAdapter
         private System.Timers.Timer Timer = new System.Timers.Timer();
 
         /// <summary>
+        /// Keeps track of any mouse or keyboard activity
+        /// </summary>
+        private DateTime _activityTimestamp;
+        private int _inactivityThreshold { get; set; }
+        private WindowHandles.GlobalKeyboardHook _keyboardHook;
+
+        /// <summary>
         /// Constructs a new instance of the PC monitor.
         /// </summary>
         /// <param name="sampleRate">The frequency for which the current states of the PC are collected (in milliseconds).</param>
-        public PCAdapterSource(int sampleRate = 50)
+        /// <param name="inactivityThreshold">The threshold (milliseconds) for which mouse and keyboard activity must cease before setting Execution sate.</param>
+        public PCAdapterSource(int sampleRate = 50, int inactivityThreshold = 15_000)
         {
+            if (sampleRate <= 0)
+                throw new ArgumentException("Cannot have a sample rate less than or equal to zero");
+
+            if (inactivityThreshold < 0)
+                throw new ArgumentException("Cannot have a threshold less than zero");
+
+            _inactivityThreshold = inactivityThreshold;
             // NOTE: You MUST have at least one constructor with a signature containing ONLY primitive types.
 
             Timer.Interval = sampleRate;
             Timer.Elapsed += Timer_Elapsed;
+
+            // Keyboard hook
+            _keyboardHook = new WindowHandles.GlobalKeyboardHook();
+            _keyboardHook.KeyboardPressed += _keyPressed;
         }
+
+        private void _keyPressed(object sender, WindowHandles.GlobalKeyboardHookEventArgs e)
+        {
+            _activityTimestamp = DateTime.Now;
+        }
+
 
         // NOTE: This could be tied to a custom egress event, an asynchronous loop, or a timer.
         private void Timer_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             Model.Availability = Availability.AVAILABLE;
 
-
             try
             {
                 Point lpPoint;
                 if (WindowHandles.GetCursorPos(out lpPoint))
                 {
+                    // Update activity timestamp
+                    if ((Model.Mouse.X.ActualPosition == null || lpPoint.X != Model.Mouse.X.ActualPosition) || (Model.Mouse.Y.ActualPosition == null || lpPoint.Y != Model.Mouse.Y.ActualPosition))
+                        _activityTimestamp = DateTime.Now;
+
                     Model.Mouse.X.ActualPosition = lpPoint.X;
                     //Model.Mouse.X.ActualPosition_Time = new DateTime(2002, 01, 01); // Birthdate of C#
                     Model.Mouse.Y.ActualPosition = lpPoint.Y;
@@ -121,10 +149,25 @@ namespace Mtconnect.PCAdapter
                 }
 
                 Model.Controller.Path.SystemAccess.Normal();
+
+                // Calculate Execution
+                if (_activityTimestamp == null)
+                {
+                    Model.Controller.Path.Execution = Execution.READY;
+                }
+                else if ((DateTime.Now - _activityTimestamp).TotalMilliseconds > _inactivityThreshold)
+                {
+                    Model.Controller.Path.Execution = Execution.STOPPED;
+                }
+                else
+                {
+                    Model.Controller.Path.Execution = Execution.ACTIVE;
+                }
             }
             catch (Exception ex)
             {
                 Model.Controller.Path.SystemAccess.Add(Condition.Level.FAULT, ex.Message, "access");
+
             }
 
             OnDataReceived?.Invoke(this, new DataReceivedEventArgs(Model));

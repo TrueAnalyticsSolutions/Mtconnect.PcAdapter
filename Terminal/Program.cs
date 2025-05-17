@@ -13,7 +13,8 @@ namespace TcpTerminal
         {
             var loggerFactory = LoggerFactory.Create(o => { o.AddConsoulLogger(); o.SetMinimumLevel(LogLevel.Debug); });
 
-            var options = new TcpAdapterOptions();
+            var options = new TcpAdapterOptions(port: 7875);
+            
             options.UpdateFromConfig();
 
             using (var adapter = new TcpAdapter(options, loggerFactory))

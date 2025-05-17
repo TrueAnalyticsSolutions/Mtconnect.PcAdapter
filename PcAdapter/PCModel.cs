@@ -48,6 +48,9 @@ namespace Mtconnect.PCAdapter
         [Event("prog", "user32.dll#GetWindowText(user32.dll#GetForegroundWindow(), StringBuilder(256), 256)")]
         public Program WindowTitle { get; set; }
 
+        [Event("exe", "Mouse and keyboard inactivity > 15")]
+        public new Execution Execution { get; set; }
+
         [Event("ac", "Indicates whether the AC charger is currently connected")]
         public bool? ACConnected { get; set; } = null;
         [Condition("acState")]
