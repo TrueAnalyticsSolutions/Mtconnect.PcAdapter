@@ -1,4 +1,5 @@
-﻿using Mtconnect.AdapterSdk.DataItems;
+﻿using Mtconnect.AdapterSdk;
+using Mtconnect.AdapterSdk.DataItems;
 using Mtconnect.AdapterSdk.DataItemValues;
 using System;
 using System.Drawing;
@@ -41,6 +42,7 @@ namespace Mtconnect.PCAdapter
         /// Keeps track of any mouse or keyboard activity
         /// </summary>
         private DateTime _activityTimestamp;
+        private int sampleRate = 50;
         private int _inactivityThreshold { get; set; }
         private WindowHandles.GlobalKeyboardHook _keyboardHook;
 
@@ -57,15 +59,11 @@ namespace Mtconnect.PCAdapter
             if (inactivityThreshold < 0)
                 throw new ArgumentException("Cannot have a threshold less than zero");
 
+            this.sampleRate = sampleRate;
+
             _inactivityThreshold = inactivityThreshold;
             // NOTE: You MUST have at least one constructor with a signature containing ONLY primitive types.
 
-            Timer.Interval = sampleRate;
-            Timer.Elapsed += Timer_Elapsed;
-
-            // Keyboard hook
-            _keyboardHook = new WindowHandles.GlobalKeyboardHook();
-            _keyboardHook.KeyboardPressed += _keyPressed;
         }
 
         private void _keyPressed(object sender, WindowHandles.GlobalKeyboardHookEventArgs e)
@@ -79,96 +77,105 @@ namespace Mtconnect.PCAdapter
         {
             Model.Availability = Availability.AVAILABLE;
 
-            try
+            if (!Model.Controller.Path.CyclingCondition.Value.ToString().Contains("NORMAL"))
             {
-                Point lpPoint;
-                if (WindowHandles.GetCursorPos(out lpPoint))
-                {
-                    // Update activity timestamp
-                    if ((Model.Mouse.X.ActualPosition == null || lpPoint.X != Model.Mouse.X.ActualPosition) || (Model.Mouse.Y.ActualPosition == null || lpPoint.Y != Model.Mouse.Y.ActualPosition))
-                        _activityTimestamp = DateTime.Now;
+                Model.Controller.Path.CyclingCondition.SetNormal();
+            } else
+            {
+                Model.Controller.Path.CyclingCondition.AssertFault("");
+            }
+            Console.WriteLine("CyclingCondition: " + Model.Controller.Path.CyclingCondition.Value.ToString());
 
-                    Model.Mouse.X.ActualPosition = lpPoint.X;
-                    //Model.Mouse.X.ActualPosition_Time = new DateTime(2002, 01, 01); // Birthdate of C#
-                    Model.Mouse.Y.ActualPosition = lpPoint.Y;
-                }
-                else
+            try
                 {
-                    Model.Mouse?.X?.ActualPosition?.Unavailable();
-                    Model.Mouse?.Y?.ActualPosition?.Unavailable();
-                }
-
-                try
-                {
-                    string activeWindowTitle = WindowHandles.GetActiveWindowTitle();
-                    if (!string.IsNullOrEmpty(activeWindowTitle))
+                    Point lpPoint;
+                    if (WindowHandles.GetCursorPos(out lpPoint))
                     {
-                        Model.Controller.Path.WindowTitle = activeWindowTitle;
+                        // Update activity timestamp
+                        if ((Model.Mouse.X.ActualPosition.Value == null || lpPoint.X != Model.Mouse.X.ActualPosition.Value) || (Model.Mouse.Y.ActualPosition.Value == null || lpPoint.Y != Model.Mouse.Y.ActualPosition.Value))
+                            _activityTimestamp = DateTime.Now;
+
+                        Model.Mouse.X.ActualPosition = lpPoint.X;
+                        //Model.Mouse.X.ActualPosition_Time = new DateTime(2002, 01, 01); // Birthdate of C#
+                        Model.Mouse.Y.ActualPosition = lpPoint.Y;
                     }
                     else
+                    {
+                        Model.Mouse?.X?.ActualPosition?.Unavailable();
+                        Model.Mouse?.Y?.ActualPosition?.Unavailable();
+                    }
+
+                    try
+                    {
+                        string activeWindowTitle = WindowHandles.GetActiveWindowTitle();
+                        if (!string.IsNullOrEmpty(activeWindowTitle))
+                        {
+                            Model.Controller.Path.WindowTitle = activeWindowTitle;
+                        }
+                        else
+                        {
+                            Model.Controller.Path.WindowTitle?.Unavailable();
+                        }
+                    }
+                    catch (Exception ex)
                     {
                         Model.Controller.Path.WindowTitle?.Unavailable();
                     }
-                }
-                catch (Exception ex)
-                {
-                    Model.Controller.Path.WindowTitle?.Unavailable();
-                }
 
-                try
-                {
-                    WindowHandles.SystemPower.SystemPowerStatus sps = new WindowHandles.SystemPower.SystemPowerStatus();
-                    WindowHandles.SystemPower.GetSystemPowerStatus(out sps);
-                    if (sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.Unknown || sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.NoSystemBattery)
+                    try
                     {
-                        Model.Controller.Path.BatteryCondition.Add(Condition.Level.WARNING, sps.flgBattery.ToString(), ((int)sps.flgBattery).ToString(), string.Empty, string.Empty);
-                        Model.Controller.Path.BatteryRemaining?.Unavailable();
+                        WindowHandles.SystemPower.SystemPowerStatus sps = new WindowHandles.SystemPower.SystemPowerStatus();
+                        WindowHandles.SystemPower.GetSystemPowerStatus(out sps);
+                        if (sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.Unknown || sps.flgBattery == WindowHandles.SystemPower.BatteryFlag.NoSystemBattery)
+                        {
+                            Model.Controller.Path.BatteryCondition.AssertWarning(((int)sps.flgBattery).ToString(), sps.flgBattery.ToString(), string.Empty, string.Empty);
+                            Model.Controller.Path.BatteryRemaining?.Unavailable();
+                        }
+                        else
+                        {
+                            Model.Controller.Path.BatteryCondition.SetNormal();
+                            Model.Controller.Path.BatteryRemaining = (int)sps.BatteryLifePercent;
+                        }
+
+
+                        if (sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Unknown)
+                        {
+                            Model.Controller.Path.ACCondition.AssertWarning(((int)sps.LineStatus).ToString(), sps.LineStatus.ToString(), string.Empty, string.Empty);
+                            Model.Controller.Path.ACConnected = null;
+                        }
+                        else
+                        {
+                            Model.Controller.Path.ACCondition.SetNormal();
+                            Model.Controller.Path.ACConnected = sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Online;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Model.Controller.Path.BatteryCondition.AssertFault(ex.TargetSite.Name, ex.Message, string.Empty, string.Empty);
+                        Model.Controller.Path.ACCondition.AssertFault(ex.TargetSite.Name, ex.Message, string.Empty, string.Empty);
+                    }
+
+                    Model.Controller.Path.SystemAccess.SetNormal();
+
+                    // Calculate Execution
+                    if (_activityTimestamp == null)
+                    {
+                        Model.Controller.Path.Execution = Execution.READY;
+                    }
+                    else if ((DateTime.Now - _activityTimestamp).TotalMilliseconds > _inactivityThreshold)
+                    {
+                        Model.Controller.Path.Execution = Execution.STOPPED;
                     }
                     else
                     {
-                        Model.Controller.Path.BatteryCondition.Normal();
-                        Model.Controller.Path.BatteryRemaining = (int)sps.BatteryLifePercent;
-                    }
-
-
-                    if (sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Unknown)
-                    {
-                        Model.Controller.Path.ACCondition.Add(Condition.Level.WARNING, sps.LineStatus.ToString(), ((int)sps.LineStatus).ToString(), string.Empty, string.Empty);
-                        Model.Controller.Path.ACConnected = null;
-                    }
-                    else
-                    {
-                        Model.Controller.Path.ACCondition.Normal();
-                        Model.Controller.Path.ACConnected = sps.LineStatus == WindowHandles.SystemPower.ACLineStatus.Online;
+                        Model.Controller.Path.Execution = Execution.ACTIVE;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Model.Controller.Path.BatteryCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
-                    Model.Controller.Path.ACCondition.Add(Condition.Level.FAULT, ex.Message, ex.TargetSite.Name, string.Empty, string.Empty);
-                }
+                    Model.Controller.Path.SystemAccess.AssertFault("access", ex.Message);
 
-                Model.Controller.Path.SystemAccess.Normal();
-
-                // Calculate Execution
-                if (_activityTimestamp == null)
-                {
-                    Model.Controller.Path.Execution = Execution.READY;
                 }
-                else if ((DateTime.Now - _activityTimestamp).TotalMilliseconds > _inactivityThreshold)
-                {
-                    Model.Controller.Path.Execution = Execution.STOPPED;
-                }
-                else
-                {
-                    Model.Controller.Path.Execution = Execution.ACTIVE;
-                }
-            }
-            catch (Exception ex)
-            {
-                Model.Controller.Path.SystemAccess.Add(Condition.Level.FAULT, ex.Message, "access");
-
-            }
 
             OnDataReceived?.Invoke(this, new DataReceivedEventArgs(Model));
         }
@@ -179,6 +186,13 @@ namespace Mtconnect.PCAdapter
             // NOTE: Start any timers, loops, or attach to any egress events from here.
             Timer.Start();
 
+            Timer.Interval = sampleRate;
+            Timer.Elapsed += Timer_Elapsed;
+
+            // Keyboard hook
+            _keyboardHook = new WindowHandles.GlobalKeyboardHook();
+            _keyboardHook.KeyboardPressed += _keyPressed;
+
             OnAdapterSourceStarted?.Invoke(this, new AdapterSourceStartedEventArgs());
         }
 
@@ -187,6 +201,7 @@ namespace Mtconnect.PCAdapter
         {
             // NOTE: Stop any timers or loops, or detatch from any egress events from here.
             Timer.Stop();
+            _keyboardHook.KeyboardPressed -= _keyPressed;
 
             OnAdapterSourceStopped?.Invoke(this, new AdapterSourceStoppedEventArgs(ex));
         }
@@ -210,6 +225,7 @@ namespace Mtconnect.PCAdapter
         public void Dispose()
         {
             Timer.Dispose();
+            _keyboardHook.Dispose();
         }
     }
 }
