@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?xml-stylesheet type="text/xsl" href="/styles/styles.xsl"?>
 <MTConnectDevices xmlns:m="urn:mtconnect.org:MTConnectDevices:2.2" xmlns="urn:mtconnect.org:MTConnectDevices:2.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mtconnect.org:MTConnectDevices:2.2 http://schemas.mtconnect.org/schemas/MTConnectDevices_2.2.xsd">
-  <Header creationTime="2025-05-19T16:20:22Z" sender="LightWorks-TM" instanceId="0" version="2.2.0.2" deviceModelChangeTime="2025-05-17T00:14:28.321540Z" assetBufferSize="0" assetCount="0" bufferSize="0"/>
+  <Header creationTime="2025-05-19T16:20:22Z" sender="LightWorks-TM" instanceId="1" version="2.2.0.2" deviceModelChangeTime="2025-05-17T00:14:28.321540Z" assetBufferSize="0" assetCount="0" bufferSize="0"/>
   <Devices>
     <Device id="5ac2de0a-c4a8-39c4-a92e-92c563cf9da8" iso841Class="1" name="5ac2de0a-c4a8-39c4-a92e-92c563cf9da8" sampleInterval="50" uuid="5ac2de0a-c4a8-39c4-a92e-92c563cf9da8">
       <DataItems>
@@ -13,24 +13,24 @@
       <Components>
         <Axes id="mouse" name="Mouse">
           <Components>
-            <Axis id="x" name="X">
+            <Linear id="x" name="X">
               <DataItems>
-                <DataItem category="SAMPLE" id="mouse_x_pos" name="mouse_x_pos" nativeUnits="PIXEL" subType="ACTUAL" type="POSITION" units="MILLIMETER">
+                <DataItem category="SAMPLE" id="mouse_x_pos" name="mouse_x_pos" nativeUnits="x:PIXEL" subType="ACTUAL" type="POSITION" units="MILLIMETER">
                   <Definition>
                     <Description>user32.dll#GetCursorPos()</Description>
                   </Definition>
                 </DataItem>
               </DataItems>
-            </Axis>
-            <Axis id="y" name="Y">
+            </Linear>
+            <Linear id="y" name="Y">
               <DataItems>
-                <DataItem category="SAMPLE" id="mouse_y_pos" name="mouse_y_pos" nativeUnits="PIXEL" subType="ACTUAL" type="POSITION" units="MILLIMETER">
+                <DataItem category="SAMPLE" id="mouse_y_pos" name="mouse_y_pos" nativeUnits="x:PIXEL" subType="ACTUAL" type="POSITION" units="MILLIMETER">
                   <Definition>
                     <Description>user32.dll#GetCursorPos()</Description>
                   </Definition>
                 </DataItem>
               </DataItems>
-            </Axis>
+            </Linear>
           </Components>
         </Axes>
         <Controller id="ctrlr" name="Controller">
@@ -47,19 +47,19 @@
                     <Description>Mouse and keyboard inactivity &gt; 15</Description>
                   </Definition>
                 </DataItem>
-                <DataItem category="EVENT" id="ctrlr_p_ac" name="ctrlr_p_ac" type="x:ctrlr_p_ac">
+                <DataItem category="EVENT" id="ctrlr_p_ac" name="ctrlr_p_ac" type="VOLTAGE_AC">
                   <Definition>
                     <Description>Indicates whether the AC charger is currently connected</Description>
                   </Definition>
                 </DataItem>
-                <DataItem category="CONDITION" id="ctrlr_p_acState" name="ctrlr_p_acState" type="x:ctrlr_p_acState"/>
+                <DataItem category="CONDITION" id="ctrlr_p_acState" name="ctrlr_p_acState" type="VOLTAGE_AC"/>
                 <DataItem category="SAMPLE" id="ctrlr_p_battery" name="ctrlr_p_battery" nativeUnits="PERCENT" type="BATTERY_CHARGE" units="PERCENT">
                   <Definition>
                     <Description>Percentage of battery remaining</Description>
                   </Definition>
                 </DataItem>
-                <DataItem category="CONDITION" id="ctrlr_p_batteryState" name="ctrlr_p_batteryState" type="x:ctrlr_p_batteryState"/>
-                <DataItem category="CONDITION" id="ctrlr_p_access" name="ctrlr_p_access" type="x:ctrlr_p_access">
+                <DataItem category="CONDITION" id="ctrlr_p_batteryState" name="ctrlr_p_batteryState" type="BATTERY_STATE"/>
+                <DataItem category="CONDITION" id="ctrlr_p_access" name="ctrlr_p_access" type="CONNECTION_STATUS">
                   <Definition>
                     <Description>State of the adapter's access to system information.</Description>
                   </Definition>
