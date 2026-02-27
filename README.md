@@ -1,3 +1,5 @@
+[![validate-mtconnect](https://github.com/TrueAnalyticsSolutions/Mtconnect.PcAdapter/actions/workflows/validate-mtconnect.yml/badge.svg)](https://github.com/TrueAnalyticsSolutions/Mtconnect.PcAdapter/actions/workflows/validate-mtconnect.yml)
+
 # Mtconnect.PcAdapter
 This is a simple, interactive demo of a MTConnect Adapter using the [TAMS Adapter SDK](https://github.com/TrueAnalyticsSolutions/Mtconnect.Adapter).
 
